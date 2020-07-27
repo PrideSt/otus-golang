@@ -10,8 +10,8 @@ import (
 )
 
 func TestUnpack(t *testing.T) {
-	for _, tst := range [...]struct{
-		name	 string
+	for _, tst := range [...]struct {
+		name     string
 		input    string
 		expected string
 		err      error
@@ -57,8 +57,8 @@ func TestUnpack(t *testing.T) {
 }
 
 func TestUnpackWithEscape(t *testing.T) {
-	for _, tst := range [...]struct{
-		name	 string
+	for _, tst := range [...]struct {
+		name     string
 		input    string
 		expected string
 		err      error
@@ -90,12 +90,12 @@ func TestUnpackWithEscape(t *testing.T) {
 
 func TestUnpackWithZeroByte(t *testing.T) {
 	// t.Skip()
-	for _, tt := range [...]struct{
-		name	 string
+	for _, tt := range [...]struct {
+		name     string
 		input    string
 		expected string
 		err      error
-	} {
+	}{
 		{
 			name:     `zero byte first`,
 			input:    "\x00a2",
@@ -124,32 +124,32 @@ func TestUnpackWithZeroByte(t *testing.T) {
 }
 
 func TestUnpackMyltiButeRune(t *testing.T) {
-	for _, tt := range [...]struct{
-		name	 string
+	for _, tt := range [...]struct {
+		name     string
 		input    string
 		expected string
 		err      error
 	}{
 		{
-			name: 	  "cyrillic string",
+			name:     "cyrillic string",
 			input:    "ы2ю3ф4ъ0",
 			expected: "ыыюююфффф",
 			err:      nil,
 		},
 		{
-			name: 	  "cyrillic string",
+			name:     "cyrillic string",
 			input:    "ё2Ё3",
 			expected: "ёёЁЁЁ",
 			err:      nil,
 		},
 		{
-			name: 	  "Hiragana (Japanese) string",
+			name:     "Hiragana (Japanese) string",
 			input:    "か2あ3ぃ4ぅ0",
 			expected: "かかあああぃぃぃぃ",
 			err:      nil,
 		},
 	} {
-		t.Run(tt.name, func(t *testing.T){
+		t.Run(tt.name, func(t *testing.T) {
 			gs, err := repeatgroup.ParseString(tt.input)
 			require.Equal(t, tt.err, err)
 
@@ -160,28 +160,28 @@ func TestUnpackMyltiButeRune(t *testing.T) {
 }
 
 func TestUnpackMyltiRuneCharacters(t *testing.T) {
-	for _, tt := range [...]struct{
-		name	 string
+	for _, tt := range [...]struct {
+		name     string
 		input    string
 		expected string
 		err      error
-	} {
+	}{
 		// tests with unicode
 		{
-			name: 	  `Single code-point emoji without skin tone modifier`,
+			name:     `Single code-point emoji without skin tone modifier`,
 			input:    `a2👨2`,
 			expected: `aa👨👨`,
 		},
 		{
-			name: 	  `Multy code-point emoji (with skin tone modifier)`,
-			input:    `a3👨🏽2`,
+			name:  `Multy code-point emoji (with skin tone modifier)`,
+			input: `a3👨🏽2`,
 			//       👨\xF0\x9F\x91\xA8 // person, code-point 1
 			//                       🏽 \xF0\x9F\x8F\xBD // skin tone fitz-5, code-point 2
 			expected: `aaa👨🏽👨🏽`,
 		},
 		{
-			name: 	  `Multy code-point emoji (with skin tone modifier and zero width joiner)`,
-			input:    `b1👨🏾‍🚀2`,
+			name:  `Multy code-point emoji (with skin tone modifier and zero width joiner)`,
+			input: `b1👨🏾‍🚀2`,
 			// 👨🏾‍🚀 =   "\xF0\x9F\x91\xA8\xF0\x9F\x8F\xBE\xE2\x80\x8B\xF0\x9F\x9A\x80",
 			//       👨\xF0\x9F\x91\xA8 // person
 			//                        🏽 \xF0\x9F\x8F\xBD // skin tone fitz-5
@@ -190,31 +190,31 @@ func TestUnpackMyltiRuneCharacters(t *testing.T) {
 			expected: `b👨🏾‍🚀👨🏾‍🚀`,
 		},
 		{
-			name: 	  `Multy code-point emoji with several modifiers`,
+			name:     `Multy code-point emoji with several modifiers`,
 			input:    "a1e\u0301\u03012",
 			expected: `aé́é́`,
 		},
 		{
-			name: 	  `Multy code-point with letter modifier`,
+			name:     `Multy code-point with letter modifier`,
 			input:    "a1e\u02EF\u02EF2",
 			expected: `ae˯˯e˯˯`,
 		},
 		{
-			name: `Non ascii digits in repeat count (MATHEMATICAL MONOSPACE DIGIT THREE)`,
+			name:  `Non ascii digits in repeat count (MATHEMATICAL MONOSPACE DIGIT THREE)`,
 			input: `a𝟹`,
 			// input: "a\xF0\x9D\x9F\xB9",
 			// it looks like a3 (@see https://www.fileformat.info/info/unicode/char/1d7f9/index.htm)
 			expected: `a𝟹`,
 		},
 		{
-			name: `Repeat non ascii digit (MATHEMATICAL MONOSPACE DIGIT THREE)`,
+			name:  `Repeat non ascii digit (MATHEMATICAL MONOSPACE DIGIT THREE)`,
 			input: `a𝟹2`,
 			// input: "a\xF0\x9D\x9F\xB92",
 			// it looks like a3 (@see https://www.fileformat.info/info/unicode/char/1d7f9/index.htm)
 			expected: `a𝟹𝟹`,
 		},
 	} {
-		t.Run(tt.name, func(t *testing.T){
+		t.Run(tt.name, func(t *testing.T) {
 			gs, err := repeatgroup.ParseString(tt.input)
 			require.Equal(t, tt.err, err)
 
