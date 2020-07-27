@@ -24,7 +24,7 @@ func (r *Reader) GetNext() (rune, int) {
 	return rn, r.offset
 }
 
-// IsNotEOF returns true when offset goes till end of internal buffer.
+// IsNotEOF returns false when offset goes till end of internal buffer.
 func (r *Reader) IsNotEOF() bool {
 	return r.offset < len(r.buffer)
 }
