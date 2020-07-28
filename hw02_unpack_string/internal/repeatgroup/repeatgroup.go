@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"unicode"
-
-	"github.com/PrideSt/otus-golang/hw02_unpack_string/internal/utf8reader"
 )
 
 // Parser can create Unpacker from string, create internal view from encoded string.
@@ -82,7 +80,7 @@ func flushBuffer(gs *GroupStorage, buffer *bytes.Buffer, cnt int) {
 func ParseString(input string) (Unpacker, error) {
 	var gs GroupStorage
 	var buffer bytes.Buffer
-	reader := utf8reader.Make([]byte(input))
+	reader := MakeReader([]byte(input))
 
 	for reader.IsNotEOF() {
 		r, offset := reader.GetNext()
