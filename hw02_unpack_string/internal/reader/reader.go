@@ -14,6 +14,7 @@ type Reader struct {
 func Make(buffer []byte, offset int) Reader {
 	ownBuffer := make([]byte, len(buffer))
 	copy(ownBuffer, buffer)
+
 	return Reader{ownBuffer, offset}
 }
 

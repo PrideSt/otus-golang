@@ -62,6 +62,7 @@ func ParseString(input string) (Unpacker, error) {
 			}
 
 			gs.flushBuffer(&buffer, int(r-'0'))
+
 			continue
 		case isEscapeSymbol(r):
 			// if escape is last symbol do nothing, add them to buffer like any another
@@ -90,5 +91,6 @@ func ParseString(input string) (Unpacker, error) {
 	}
 
 	gs.flushBuffer(&buffer, 1)
+
 	return gs, nil
 }

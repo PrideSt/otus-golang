@@ -37,6 +37,7 @@ func (gs GroupStorage) Unpack() (string, error) {
 // AddRepeatGroup new entry to storage.
 func (gs *GroupStorage) addRepeatGroup(rg repeatGroup) (newSize int) {
 	gs.rgs = append(gs.rgs, rg)
+
 	return len(gs.rgs)
 }
 
@@ -45,6 +46,7 @@ func (gs *GroupStorage) add(b []byte, cnt int) (newSize int) {
 	chunk := make([]byte, len(b))
 	copy(chunk, b)
 	gs.addRepeatGroup(repeatGroup{chunk, cnt})
+
 	return len(gs.rgs)
 }
 
