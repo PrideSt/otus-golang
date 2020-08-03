@@ -140,9 +140,9 @@ func TestParseString(t *testing.T) {
 			expected: GroupStorage{[]repeatGroup{
 				{[]byte("a"), 1},
 				{[]byte{0x65, 0xcc, 0x81, 0xcc, 0x81}, 2},
-				//             e = 0x65
-				//                   ' = 0xcc, 0x81
-				//                  			 ' = 0xcc, 0x81
+				//  e = 0x65
+				//        ' = 0xcc, 0x81
+				//                    ' = 0xcc, 0x81
 			}},
 		},
 		{
