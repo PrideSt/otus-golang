@@ -3,11 +3,14 @@ package hw03_frequency_analysis //nolint:golint
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/PrideSt/otus-golang/hw03_frequency_analysis/internal/topbuffer"
 )
 
 // Change to true if needed
-var taskWithAsteriskIsCompleted = false
+var taskWithAsteriskIsCompleted = true
 
 var text = `Как видите, он  спускается  по  лестнице  вслед  за  своим
 	другом   Кристофером   Робином,   головой   вниз,  пересчитывая
@@ -51,10 +54,136 @@ func TestTop10(t *testing.T) {
 	t.Run("positive test", func(t *testing.T) {
 		if taskWithAsteriskIsCompleted {
 			expected := []string{"он", "а", "и", "что", "ты", "не", "если", "то", "его", "кристофер", "робин", "в"}
-			require.Subset(t, expected, Top10(text))
+			actual := Top10(text)
+			assert.Subset(t, expected, actual)
 		} else {
 			expected := []string{"он", "и", "а", "что", "ты", "не", "если", "-", "то", "Кристофер"}
 			require.ElementsMatch(t, expected, Top10(text))
 		}
 	})
+}
+
+func TestNormalizeWord(t *testing.T) {
+	normalizer := getWordNormalizer()
+	for _, tt := range []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{
+			name:     `empty`,
+			input:    ``,
+			expected: []string(nil),
+		},
+		{
+			name:     `one symbol`,
+			input:    `a`,
+			expected: []string{`a`},
+		},
+		{
+			name:     `simple word`,
+			input:    `word`,
+			expected: []string{`word`},
+		},
+		{
+			name:     `simple слово`,
+			input:    `слово`,
+			expected: []string{`слово`},
+		},
+		{
+			name:     `dash`,
+			input:    `-`,
+			expected: []string(nil),
+		},
+		{
+			name:     `dash first`,
+			input:    `-one`,
+			expected: []string{`one`},
+		},
+		{
+			name:     `dash last`,
+			input:    `one-`,
+			expected: []string{`one`},
+		},
+		{
+			name:     `dash in the middle`,
+			input:    `какой-то`,
+			expected: []string{`какой-то`},
+		},
+		{
+			name:     `with punctuation last`,
+			input:    `hello!`,
+			expected: []string{`hello`},
+		},
+		{
+			name:     `with punctuation in the middle`,
+			input:    `hello,Masha`,
+			expected: []string{`hello`, `masha`},
+		},
+		{
+			name:     `case insensetive`,
+			input:    `hElLo`,
+			expected: []string{`hello`},
+		},
+		{
+			name:     `with numbers`,
+			input:    `i18n`,
+			expected: []string{`i18n`},
+		},
+		{
+			name:     `with special characters`,
+			input:    "with\ttab",
+			expected: []string{`with`, `tab`},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, normalizer(tt.input))
+		})
+	}
+}
+
+func TestTopN(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		input    string
+		topLen   int
+		expected []topbuffer.FreqEntry
+	}{
+		{
+			name:     `empty`,
+			input:    ``,
+			topLen:   10,
+			expected: []topbuffer.FreqEntry{},
+		},
+		{
+			name:     `one word`,
+			input:    `one one one one one one`,
+			topLen:   10,
+			expected: []topbuffer.FreqEntry{{`one`, 6}},
+		},
+		{
+			name:   `top overflow`,
+			input:  `one two two three three three four four four four`,
+			topLen: 3,
+			expected: []topbuffer.FreqEntry{
+				{`four`, 4},
+				{`three`, 3},
+				{`two`, 2},
+			},
+		},
+		{
+			name:   `top case sensetive`,
+			input:  `one two tWo Three tHree thRee Four fOur foUr fouR`,
+			topLen: 3,
+			expected: []topbuffer.FreqEntry{
+				{`four`, 4},
+				{`three`, 3},
+				{`two`, 2},
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, TopN(tt.input, tt.topLen))
+		})
+	}
 }
