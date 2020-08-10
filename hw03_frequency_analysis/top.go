@@ -173,7 +173,7 @@ func runSygnalListener(wg *sync.WaitGroup, chTerminate chan struct{}, chSygnal <
 	}
 }
 
-// findTopN pass every antry from ferq dictionary (map of word -> count in text) through TopBuffer- ordered buffern with
+// findTopN pass every antry from ferq dictionary (map of word -> count in text) through topbuffer.Interface- ordered buffern with
 // topResultsCnt elements. Returns ordered slice of pair {word, freq}.
 func findTopN(dict map[string]int, topResultsCnt int, chTerminate <-chan struct{}, log *log.Logger) ([]topbuffer.FreqEntry, error) {
 	top := topbuffer.New(topResultsCnt, func(lhs, rhs topbuffer.FreqEntry) bool {

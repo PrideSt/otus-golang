@@ -18,7 +18,7 @@ type TopBuffer struct {
 	less   func(lhs, rhs FreqEntry) bool
 }
 
-type TopBufferInterface interface {
+type Interface interface {
 	sort.Interface
 	Add(v FreqEntry) int
 	Get() []FreqEntry
@@ -46,6 +46,7 @@ func (b *TopBuffer) Less(i, j int) bool {
 	if i > b.len || j > b.len {
 		panic(fmt.Sprintf("Less func get index [i,j]: [%d, %d] out of range, buffer len: %d, buffer cap: %d", i, j, b.len, len(b.buffer)))
 	}
+
 	return b.less(b.buffer[i], b.buffer[j])
 }
 
