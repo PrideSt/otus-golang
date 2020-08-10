@@ -145,6 +145,7 @@ func runFreqCounter(in <-chan string, out chan<- map[string]int, chTerminate <-c
 			if !ok {
 				log.Println("All words counted, terminate freq-counter")
 				out <- dict
+
 				return
 			}
 			log.Printf("increase count of word: %q\n", word)
@@ -188,6 +189,7 @@ func findTopN(dict map[string]int, topResultsCnt int, chTerminate <-chan struct{
 			select {
 			case <-chTerminate:
 				log.Println("terminate find-top-n")
+
 				return []topbuffer.FreqEntry{}, fmt.Errorf("findTopN terminated")
 			default:
 			}
@@ -271,6 +273,7 @@ func TopN(input string, topLen int) []topbuffer.FreqEntry {
 
 	// when we catch a sygnal wait till all goroutins closed
 	wg.Wait()
+
 	return top
 }
 
