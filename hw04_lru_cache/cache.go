@@ -42,7 +42,7 @@ func (c *lruCache) Get(key Key) (interface{}, bool) {
 	if item, ok := c.items[key]; ok {
 		c.queue.MoveToFront(item)
 
-		return item.Value.(cacheItem).value, true
+		return item.Value.(*cacheItem).value, true
 	}
 
 	return nil, false
@@ -55,8 +55,7 @@ func (c *lruCache) Set(key Key, value interface{}) bool {
 
 	if item, ok := c.items[key]; ok {
 		c.queue.MoveToFront(item)
-		// memory alloc =(
-		item.Value = cacheItem{key, value}
+		item.Value.(*cacheItem).value = value
 
 		return true
 	}
@@ -64,10 +63,10 @@ func (c *lruCache) Set(key Key, value interface{}) bool {
 	if c.capacity == c.queue.Len() {
 		lastItem := c.queue.Back()
 		c.queue.Remove(lastItem)
-		delete(c.items, lastItem.Value.(cacheItem).key)
+		delete(c.items, lastItem.Value.(*cacheItem).key)
 	}
 
-	c.queue.PushFront(cacheItem{key, value})
+	c.queue.PushFront(&cacheItem{key, value})
 	c.items[key] = c.queue.Front()
 
 	return false
