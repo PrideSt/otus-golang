@@ -27,7 +27,6 @@ type Interface interface {
 // Make TopBuffer with len = size and element comparator fgt.
 func New(size int, less func(lhs, rhs FreqEntry) bool) *TopBuffer {
 	buffer := make([]FreqEntry, size)
-	// buffer := []FreqEntry{}
 	instance := TopBuffer{
 		buffer: buffer,
 		less:   less,

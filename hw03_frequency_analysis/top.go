@@ -39,8 +39,8 @@ func operate(f func(s string) []string, in <-chan string, chTerminate <-chan str
 	out := make(chan string)
 	wg.Add(1)
 	go func() {
-		defer close(out)
 		defer wg.Done()
+		defer close(out)
 		for {
 			select {
 			case text, ok := <-in:
@@ -113,25 +113,22 @@ func getTopWords(r []topbuffer.FreqEntry) []string {
 // countWords sum how much times words in chNormWords occures.
 func countWords(chNormWords <-chan string, chTerminate <-chan struct{}) map[string]int {
 	dict := make(map[string]int)
-sumFreqCounter:
 	for {
 		select {
 		case word, ok := <-chNormWords:
 			if !ok {
 				logger.Println("All words counted, terminate freq-counter")
 
-				break sumFreqCounter
+				return dict
 			}
 			logger.Printf("increase count of word: %q\n", word)
 			dict[word]++
 		case <-chTerminate:
 			logger.Println("gracefully freq-counter termination")
 
-			break sumFreqCounter
+			return nil
 		}
 	}
-
-	return dict
 }
 
 // TopN return topLen the most frequencies words in input.
