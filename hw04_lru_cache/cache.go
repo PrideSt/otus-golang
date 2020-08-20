@@ -21,7 +21,7 @@ type lruCache struct {
 	capacity int
 	queue    List
 	items    map[Key]*Item
-	mu       *sync.Mutex
+	mu       sync.Mutex
 }
 
 // NewCache creates new Cache instance.
@@ -30,7 +30,7 @@ func NewCache(capacity int) Cache {
 		capacity: capacity,
 		queue:    NewList(),
 		items:    make(map[Key]*Item, capacity),
-		mu:       &sync.Mutex{}, // use reference to prevent copying in methods with copy receiver
+		mu:       sync.Mutex{},
 	}
 }
 

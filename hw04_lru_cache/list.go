@@ -24,11 +24,7 @@ type list struct {
 
 // NewList creates new instance of list.
 func NewList() List {
-	return &list{
-		first: nil,
-		last:  nil,
-		len:   0,
-	}
+	return &list{}
 }
 
 // Len returns count of elements in list.
@@ -50,7 +46,6 @@ func (l list) Back() *Item {
 func (l *list) PushFront(v interface{}) *Item {
 	i := &Item{
 		Next:  l.first,
-		Prev:  nil,
 		Value: v,
 	}
 
@@ -69,7 +64,6 @@ func (l *list) PushFront(v interface{}) *Item {
 // PushBack add new element at the end of list.
 func (l *list) PushBack(v interface{}) *Item {
 	i := &Item{
-		Next:  nil,
 		Prev:  l.last,
 		Value: v,
 	}
