@@ -1,20 +1,16 @@
 package hw03_frequency_analysis //nolint:golint,stylecheck
 
 import (
-	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
-	"os/signal"
 	"regexp"
 	"strings"
 	"sync"
-	"syscall"
 
 	"github.com/PrideSt/otus-golang/hw03_frequency_analysis/internal/topbuffer"
 )
 
-const isVerbose bool = false
+var logger = log.New(os.Stdout, "", log.LstdFlags)
 
 // chopString return first limit bytes string from s or full string if
 // them length less then limit.
@@ -26,171 +22,74 @@ func chopString(s string, limit int) string {
 	return s
 }
 
-// runTextChunker starts goroutine which divide input string by chunks with size less then maxLen and
-// and write chunks to out channel.
-func runTextChunker(delim string, maxLen int, in <-chan string, out chan<- string, chTerminate <-chan struct{}, wg *sync.WaitGroup, log *log.Logger) {
-	defer wg.Done()
-	defer close(out)
+// getWordNormalizer returns function used for word normalization, returns proper words occurred in string.
+func getWordNormalizer() func(s string) []string {
+	pattern := `[a-zA-Zа-яА-Я0-9]+(?:-[a-zA-Zа-яА-Я0-9]+)*`
+	re := regexp.MustCompile(pattern)
 
-	for {
-		select {
-		case text, ok := <-in:
-			if !ok {
-				log.Println("All texts splitted, terminate text-chunker")
+	return func(s string) []string {
+		lowerStr := strings.ToLower(s)
 
-				return
-			}
-			log.Printf("let's chunck the text: \"%s...\"\n", chopString(text, 10))
+		return re.FindAllString(lowerStr, -1)
+	}
+}
 
-			chunkCnt := len(text)/maxLen + 1
-			chunks := strings.SplitN(text, delim, chunkCnt)
-
-			for i, chunk := range chunks {
-				select {
-				case out <- chunk:
-					log.Printf("write the chunk #%d: \"%s...\"\n", i, chopString(chunk, 10))
-				case <-chTerminate:
-					log.Println("gracefully text-chunker termination")
+// operate runs goroutine which apply f function to every entry in input stream and write result to output stream.
+func operate(f func(s string) []string, in <-chan string, chTerminate <-chan struct{}, wg *sync.WaitGroup) <-chan string {
+	out := make(chan string)
+	wg.Add(1)
+	go func() {
+		defer close(out)
+		defer wg.Done()
+		for {
+			select {
+			case text, ok := <-in:
+				if !ok {
+					logger.Println("all done, terminate operation")
 
 					return
 				}
-			}
-		case <-chTerminate:
-			log.Println("gracefully text-chunker termination")
+				logger.Printf("input \"%s...\"\n", chopString(text, 10))
 
-			return
-		}
-	}
-}
+				for i, chunk := range f(text) {
+					select {
+					case out <- chunk:
+						logger.Printf("out[%d]: \"%s...\"\n", i, chopString(chunk, 10))
+					case <-chTerminate:
+						logger.Println("terminate operation gracefully")
 
-// runWordSplitter starts goroutine which extracts words from string passed to in channel
-// and write word as is to out channel.
-func runWordSplitter(in <-chan string, out chan<- string, chTerminate <-chan struct{}, wg *sync.WaitGroup, log *log.Logger) {
-	defer wg.Done()
-	defer close(out)
-
-	for {
-		select {
-		case text, ok := <-in:
-			if !ok {
-				log.Println("All words splitted, terminate word-splitter")
-
-				return
-			}
-			log.Printf("input text appears: \"%s...\", split it on words\n", chopString(text, 10))
-			for _, word := range strings.Fields(text) {
-				select {
-				case out <- word:
-					log.Printf("writed raw word: %q\n", word)
-				case <-chTerminate:
-					log.Println("gracefully word-splitter termination")
-
-					return
+						return
+					}
 				}
-			}
-		case <-chTerminate:
-			log.Println("gracefully word-splitter termination")
-
-			return
-		}
-	}
-}
-
-// runWordNormalizer starts goroutine to converts raw words to notmal form using function norm, apply them
-// to every word from in channel and pass normalization result to out channel.
-func runWordNormalizer(norm func(s string) []string, in <-chan string, out chan<- string, chTerminate <-chan struct{}, wg *sync.WaitGroup, log *log.Logger) {
-	defer wg.Done()
-	defer close(out)
-
-	for {
-		select {
-		case word, ok := <-in:
-			if !ok {
-				defer log.Println("All words normalized, terminate word-normalizer")
+			case <-chTerminate:
+				logger.Println("terminate operation gracefully")
 
 				return
 			}
-			for i, normWord := range norm(word) {
-				log.Printf("normolize word %q part %d -> %q\n", word, i, normWord)
-
-				select {
-				case out <- normWord:
-					log.Printf("writed normal word : %q\n", normWord)
-				case <-chTerminate:
-					log.Println("gracefully word-normalizer termination")
-
-					return
-				}
-			}
-		case <-chTerminate:
-			log.Println("gracefully word-normalizer termination")
-
-			return
 		}
-	}
-}
+	}()
 
-// runFreqCounter starts goroutine, get normalized word into in channel and increase frequencies of
-// this word into internal map dict. When in channel closed and all words treated close done
-// channel and unlock main thred for search N max (the most frequencies) elements.
-func runFreqCounter(in <-chan string, out chan<- map[string]int, chTerminate <-chan struct{}, wg *sync.WaitGroup, log *log.Logger) {
-	defer wg.Done()
-	defer close(out)
-
-	dict := make(map[string]int)
-	// we use index map in single thread (single-writer) and shouldn't use locks
-	for {
-		select {
-		case word, ok := <-in:
-			if !ok {
-				log.Println("All words counted, terminate freq-counter")
-				out <- dict
-
-				return
-			}
-			log.Printf("increase count of word: %q\n", word)
-			dict[word]++
-		case <-chTerminate:
-			log.Println("gracefully freq-counter termination")
-
-			return
-		}
-	}
-}
-
-// runSygnalListener subscribes on chSygnal channel and close chTerminate channel on any income sygnal.
-func runSygnalListener(wg *sync.WaitGroup, chTerminate chan struct{}, chSygnal <-chan os.Signal, log *log.Logger) {
-	defer wg.Done()
-	// close terminate channel can only this listener, but it can't write to them
-	// main thread can write, but not close
-	defer close(chTerminate)
-
-	_, ok := <-chSygnal
-	if ok {
-		log.Println("terminate sygnal received")
-	} else {
-		log.Println("terminate sygnal-listener")
-	}
+	return out
 }
 
 // findTopN pass every antry from ferq dictionary (map of word -> count in text) through topbuffer.Interface- ordered buffern with
 // topResultsCnt elements. Returns ordered slice of pair {word, freq}.
-func findTopN(dict map[string]int, topResultsCnt int, chTerminate <-chan struct{}, log *log.Logger) ([]topbuffer.FreqEntry, error) {
+func findTopN(dict map[string]int, topResultsCnt int, chTerminate <-chan struct{}) []topbuffer.FreqEntry {
 	top := topbuffer.New(topResultsCnt, func(lhs, rhs topbuffer.FreqEntry) bool {
 		return lhs.Freq > rhs.Freq
 	})
 
-	log.Println("Find top, fill top buffer")
+	logger.Println("Find top, fill top buffer")
 	i := 0
 	for w, fr := range dict {
-		log.Println(w, "->", fr)
+		logger.Println(w, "->", fr)
 		if i%100 == 0 {
-			// we should terminate while finding top
+			// we should terminate while finding top, check it every 100 iterations
 			select {
 			case <-chTerminate:
-				log.Println("terminate find-top-n")
+				logger.Println("terminate find-top-n")
 
-				return []topbuffer.FreqEntry{}, fmt.Errorf("findTopN terminated")
+				return []topbuffer.FreqEntry{}
 			default:
 			}
 		}
@@ -198,7 +97,7 @@ func findTopN(dict map[string]int, topResultsCnt int, chTerminate <-chan struct{
 		i++
 	}
 
-	return top.Get(), nil
+	return top.Get()
 }
 
 // getTopWords converts list of {word, freq} pairs to word slice.
@@ -211,73 +110,80 @@ func getTopWords(r []topbuffer.FreqEntry) []string {
 	return results
 }
 
-// getWordNormalizer returns normalize function, allow reuse compiled regexp.
-func getWordNormalizer() func(s string) []string {
-	pattern := `[a-zA-Zа-яА-Я0-9]+(?:-[a-zA-Zа-яА-Я0-9]+)*`
-	re := regexp.MustCompile(pattern)
+// countWords sum how much times words in chNormWords occures.
+func countWords(chNormWords <-chan string, chTerminate <-chan struct{}) map[string]int {
+	dict := make(map[string]int)
+sumFreqCounter:
+	for {
+		select {
+		case word, ok := <-chNormWords:
+			if !ok {
+				logger.Println("All words counted, terminate freq-counter")
 
-	return func(s string) []string {
-		lowerStr := strings.ToLower(s)
+				break sumFreqCounter
+			}
+			logger.Printf("increase count of word: %q\n", word)
+			dict[word]++
+		case <-chTerminate:
+			logger.Println("gracefully freq-counter termination")
 
-		return re.FindAllString(lowerStr, -1)
+			break sumFreqCounter
+		}
 	}
+
+	return dict
 }
 
 // TopN return topLen the most frequencies words in input.
-func TopN(input string, topLen int) []topbuffer.FreqEntry {
-	var plogger *log.Logger
-
-	if isVerbose {
-		plogger = log.New(os.Stdout, "", log.LstdFlags)
-	} else {
-		plogger = log.New(ioutil.Discard, "", log.LstdFlags)
-	}
-
-	plogger.Println("my pid is:", os.Getpid())
-
+func TopN(input string, topLen int, chTerminate <-chan struct{}) []topbuffer.FreqEntry {
 	chText := make(chan string, 32)
-	chTextChunks := make(chan string, 32)
-	chDryWords := make(chan string, 32)
-	chNormWords := make(chan string, 32)
-	chDict := make(chan map[string]int, 1)
 
-	chSygnal := make(chan os.Signal, 1)
-	signal.Notify(chSygnal, syscall.SIGTERM, syscall.SIGINT)
+	wg := sync.WaitGroup{}
+	// if chTerminate closed we must wait running goroutins
+	defer wg.Wait()
 
-	chTerminate := make(chan struct{})
+	// split input text on chuncks, maxLen must be increased in real cases (text can be long)
+	chTextChunks := operate(
+		func(delim string, maxLen int) func(s string) []string {
+			return func(input string) []string {
+				chunkCnt := len(input)/maxLen + 1
+				return strings.SplitN(input, delim, chunkCnt)
+			}
+		}(" ", 16),
+		chText,
+		chTerminate,
+		&wg,
+	)
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go runSygnalListener(&wg, chTerminate, chSygnal, plogger)
+	// split text chunks on words
+	chDryWords := operate(
+		strings.Fields,
+		chTextChunks,
+		chTerminate,
+		&wg,
+	)
 
-	wg.Add(4)
-	go runTextChunker(" ", 16, chText, chTextChunks, chTerminate, &wg, plogger)
-	go runWordSplitter(chTextChunks, chDryWords, chTerminate, &wg, plogger)
-	go runWordNormalizer(getWordNormalizer(), chDryWords, chNormWords, chTerminate, &wg, plogger)
-	go runFreqCounter(chNormWords, chDict, chTerminate, &wg, plogger)
+	// convert word in normal form
+	chNormWords := operate(
+		getWordNormalizer(),
+		chDryWords,
+		chTerminate,
+		&wg,
+	)
 
 	chText <- input
 	close(chText)
 
-	plogger.Println("Wait all wards counted...")
-	dict := <-chDict
+	// count words frequencies in main thread, map requires serialization
+	dict := countWords(chNormWords, chTerminate)
 
-	top, err := findTopN(dict, topLen, chTerminate, plogger)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-
-	// close sygnal channel and terminate sygnal listener goroutine
-	close(chSygnal)
-
-	// when we catch a sygnal wait till all goroutins closed
-	wg.Wait()
+	// pass map through TopBuffer and find topLen the most frequencies words
+	top := findTopN(dict, topLen, chTerminate)
 
 	return top
 }
 
 // Top10 returns 10 the most frequencies words in s.
-func Top10(s string) []string {
-	return getTopWords(TopN(s, 10))
+func Top10(s string, chTerminate <-chan struct{}) []string {
+	return getTopWords(TopN(s, 10, chTerminate))
 }

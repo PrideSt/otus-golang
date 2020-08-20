@@ -1,13 +1,20 @@
 package hw03_frequency_analysis //nolint:golint
 
 import (
+	"io/ioutil"
+	"log"
+	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/PrideSt/otus-golang/hw03_frequency_analysis/internal/topbuffer"
 )
+
+func TestMain(m *testing.M) {
+	logger = log.New(ioutil.Discard, "", log.LstdFlags)
+	os.Exit(m.Run())
+}
 
 // Change to true if needed
 var taskWithAsteriskIsCompleted = true
@@ -48,17 +55,17 @@ var text = `Как видите, он  спускается  по  лестни�
 
 func TestTop10(t *testing.T) {
 	t.Run("no words in empty string", func(t *testing.T) {
-		require.Len(t, Top10(""), 0)
+		require.Len(t, Top10("", nil), 0)
 	})
 
 	t.Run("positive test", func(t *testing.T) {
 		if taskWithAsteriskIsCompleted {
 			expected := []string{"он", "а", "и", "что", "ты", "не", "если", "то", "его", "кристофер", "робин", "в"}
-			actual := Top10(text)
-			assert.Subset(t, expected, actual)
+			actual := Top10(text, nil)
+			require.Subset(t, expected, actual)
 		} else {
 			expected := []string{"он", "и", "а", "что", "ты", "не", "если", "-", "то", "Кристофер"}
-			require.ElementsMatch(t, expected, Top10(text))
+			require.ElementsMatch(t, expected, Top10(text, nil))
 		}
 	})
 }
@@ -183,7 +190,7 @@ func TestTopN(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.expected, TopN(tt.input, tt.topLen))
+			require.Equal(t, tt.expected, TopN(tt.input, tt.topLen, nil))
 		})
 	}
 }
