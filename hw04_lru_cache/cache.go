@@ -30,7 +30,6 @@ func NewCache(capacity int) Cache {
 		capacity: capacity,
 		queue:    NewList(),
 		items:    make(map[Key]*Item, capacity),
-		mu:       sync.Mutex{},
 	}
 }
 
