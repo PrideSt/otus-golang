@@ -26,11 +26,11 @@ func TestPipeline(t *testing.T) {
 				for v := range in {
 					time.Sleep(sleepPerStage)
 					out <- f(v)
-					// ^__ если использовать буферизированный канал в тестах для входных значений, то мы утечем вот тут
-					// мы уже получили значение и заблокированы на запись, но пайплайн разорван,
-					// в последнейм тесте ожидается что мы разорвем пайплайн так, что ни одного результата не будет обработано
-					// поэтому мы не можем доделывать задачи (грубо говоря тогда бы я вставил разрыв пайплайна только в начала
-					// и водопадом завершал пайплайн)
+					// ^__ if we use buffered chan for input values in tests, we will locked here
+					// we already read value from previouse stage and locked here wait writing to out,
+					// but out can be closed already, because we close down channel and unlink pipeline.
+					// In `done case` test expected, that we have zero results, thre fore we can't terminate
+					// the first pipeline stage and wait gracefully waterfall termination.
 				}
 			}()
 			return out
@@ -55,8 +55,7 @@ func TestPipeline(t *testing.T) {
 			close(in)
 		}()
 
-		// почему алоцируется память под 10 элементов, а не len(data)?
-		result := make([]string, 0, 10)
+		result := make([]string, 0, len(data))
 		start := time.Now()
 		for s := range ExecutePipeline(in, nil, stages...) {
 			result = append(result, s.(string))
@@ -89,7 +88,7 @@ func TestPipeline(t *testing.T) {
 			close(in)
 		}()
 
-		result := make([]string, 0, 10)
+		result := make([]string, 0, len(data))
 		start := time.Now()
 		for s := range ExecutePipeline(in, done, stages...) {
 			result = append(result, s.(string))
@@ -121,7 +120,7 @@ func TestPipeline(t *testing.T) {
 			close(in)
 		}()
 
-		result := make([]string, 0, 10)
+		result := make([]string, 0, len(data))
 		start := time.Now()
 		for s := range ExecutePipeline(in, done, stages...) {
 			result = append(result, s.(string))
@@ -154,7 +153,7 @@ func TestPipeline(t *testing.T) {
 			close(in)
 		}()
 
-		result := make([]string, 0, 10)
+		result := make([]string, 0, len(data))
 		start := time.Now()
 		for s := range ExecutePipeline(in, done, stages...) {
 			result = append(result, s.(string))
