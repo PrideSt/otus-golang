@@ -11,8 +11,6 @@ import (
 	freq "github.com/PrideSt/otus-golang/hw03_frequency_analysis"
 )
 
-var logger = log.New(os.Stdout, "", log.LstdFlags)
-
 // runSygnalListener subscribes on chSygnal channel and close chTerminate channel on any income sygnal.
 func runSygnalListener(wg *sync.WaitGroup, chTerminate chan struct{}) chan os.Signal {
 	chSygnal := make(chan os.Signal, 1)
@@ -29,9 +27,9 @@ func runSygnalListener(wg *sync.WaitGroup, chTerminate chan struct{}) chan os.Si
 
 		_, ok := <-chSygnal
 		if ok {
-			logger.Println("terminate sygnal received")
+			log.Println("terminate sygnal received")
 		} else {
-			logger.Println("terminate sygnal-listener")
+			log.Println("terminate sygnal-listener")
 		}
 	}()
 
@@ -43,7 +41,7 @@ func runSygnalListener(wg *sync.WaitGroup, chTerminate chan struct{}) chan os.Si
 // It wrong way to add signal handling into hw03_frequency_analysis, we add just terminate chan,
 // we don't know in TopN call which reasons went to termination.
 func main() {
-	logger.Println("my pid is:", os.Getpid())
+	log.Println("my pid is:", os.Getpid())
 
 	wg := sync.WaitGroup{}
 	defer wg.Wait()
