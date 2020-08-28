@@ -47,7 +47,6 @@ func GenDict(wordsCnt int, alplabet []byte, offset int, step int) ([]string, err
 		return nil, fmt.Errorf("invalid argument: offset, given negative value %d", offset)
 	}
 
-	// @todo add test and realisation for negative step
 	if step < 0 {
 		return nil, fmt.Errorf("invalid argument: step, given negative value %d", step)
 	}

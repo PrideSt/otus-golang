@@ -1,10 +1,11 @@
-package pool
+package pipe
 
 import (
 	"log"
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/PrideSt/otus-golang/hw03_frequency_analysis/internal/top"
 )
@@ -41,6 +42,7 @@ func GetWordNormalizer() func(s string) []string {
 
 	return func(s string) []string {
 		lowerStr := strings.ToLower(s)
+		time.Sleep(time.Second)
 
 		return re.FindAllString(lowerStr, -1)
 	}

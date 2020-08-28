@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 
-	"github.com/PrideSt/otus-golang/hw03_frequency_analysis/internal/pool"
+	"github.com/PrideSt/otus-golang/hw03_frequency_analysis/internal/pipe"
 	"github.com/PrideSt/otus-golang/hw03_frequency_analysis/internal/top"
 )
 
@@ -63,7 +63,7 @@ func TestTop10Single(t *testing.T) {
 }
 
 func TestTop10Multy(t *testing.T) {
-	testTop10("multy", t, pool.Top10)
+	testTop10("multy", t, pipe.Top10)
 }
 
 func testTop10(preffix string, t *testing.T, f func(s string, chTerm <-chan struct{}) []string) {
@@ -88,7 +88,7 @@ func TestTopNSingle(t *testing.T) {
 }
 
 func TestTopNMulty(t *testing.T) {
-	testTopN("multy", t, pool.TopN)
+	testTopN("multy", t, pipe.TopN)
 }
 
 func testTopN(preffix string, t *testing.T, f func(s string, topLen int, chTerm <-chan struct{}) []top.FreqEntry) {

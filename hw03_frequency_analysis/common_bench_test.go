@@ -14,7 +14,7 @@ import (
 	"testing"
 
 	"github.com/PrideSt/otus-golang/hw03_frequency_analysis/internal/generated"
-	"github.com/PrideSt/otus-golang/hw03_frequency_analysis/internal/pool"
+	"github.com/PrideSt/otus-golang/hw03_frequency_analysis/internal/pipe"
 )
 
 // go test -v -run=None -bench=^BenchmarkTopN$ -gcflags=-l -benchtime=30s ./...
@@ -71,7 +71,7 @@ func BenchmarkTopN(b *testing.B) {
 
 		b.Run(fmt.Sprintf("%s %s", bt.name, "multy"), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				pool.Top10(bt.text, nil)
+				pipe.Top10(bt.text, nil)
 			}
 		})
 	}

@@ -23,6 +23,15 @@ var (
 	textSize int
 )
 
+const (
+	ExitCodeInvalidArgPkgName = 1 << iota
+	ExitCodeInvalidArgOutFile
+	ExitCodeInvalidArgDictSize
+	ExitCodeInvalidArgTextSize
+	ExitCodeCreateOutFileFailed
+	ExitCodeCloseOutFileFailed
+)
+
 func init() {
 	flag.StringVar(&pkgName, "pkg-name", "", "specify go package name")
 	flag.StringVar(&outFile, "out", "", "path to output file to save generated text")
@@ -36,22 +45,22 @@ func main() {
 	errCode := 0
 	if pkgName == "" {
 		fmt.Println("package name not specified, pass -pkg-name argument's value")
-		errCode |= 1
+		errCode |= ExitCodeInvalidArgPkgName
 	}
 
 	if outFile == "" {
 		fmt.Println("output filename not specified, pass -out argument's value")
-		errCode |= 2
+		errCode |= ExitCodeInvalidArgOutFile
 	}
 
 	if dictSize == 0 {
 		fmt.Println("invalid dict-size, require > 0")
-		errCode |= 4
+		errCode |= ExitCodeInvalidArgDictSize
 	}
 
 	if textSize == 0 {
 		fmt.Println("invalid text-size, require > 0")
-		errCode |= 8
+		errCode |= ExitCodeInvalidArgTextSize
 	}
 
 	if errCode > 0 {
@@ -59,14 +68,9 @@ func main() {
 	}
 
 	alplabet := []byte(`abcdefghijklmnopqrstuvwxyz`) // 26
-	offset := 17576                                  // bug -> baaa instead aaa
+	offset := 17576                                  // aaa
 	step := 31
-	dict, err := txt.GenDict(dictSize, alplabet, offset, step)
-
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(16)
-	}
+	dict, _ := txt.GenDict(dictSize, alplabet, offset, step)
 
 	randSeed := time.Now().UnixNano()
 	text := txt.GenText(dict, textSize, rand.New(rand.NewSource(randSeed)))
@@ -75,9 +79,15 @@ func main() {
 	f, err := os.Create(outFile)
 	if err != nil {
 		fmt.Println(fmt.Errorf("unable to open file %q for writing: %w", outFile, err))
-		os.Exit(32)
+		os.Exit(ExitCodeCreateOutFileFailed)
 	}
-	defer f.Close()
+	defer func() {
+		err := f.Close()
+		if err != nil {
+			fmt.Println(fmt.Errorf("error when close file %q: %w", outFile, err))
+			os.Exit(ExitCodeCloseOutFileFailed)
+		}
+	}()
 
 	packageTemplate.Execute(f, struct {
 		CreatedAt time.Time

@@ -8,7 +8,7 @@ import (
 	"sync"
 	"syscall"
 
-	freq "github.com/PrideSt/otus-golang/hw03_frequency_analysis"
+	"github.com/PrideSt/otus-golang/hw03_frequency_analysis/internal/pipe"
 )
 
 // runSygnalListener subscribes on chSygnal channel and close chTerminate channel on any income sygnal.
@@ -48,7 +48,8 @@ func main() {
 
 	chTerminate := make(chan struct{})
 	chSygnal := runSygnalListener(&wg, chTerminate)
-	defer close(chSygnal)
+	// defer close(chSygnal)
+	defer signal.Stop(chSygnal)
 
 	// we can get text from stdin of from file @todo
 	text := `Как видите, он  спускается  по  лестнице  вслед  за  своим
@@ -85,7 +86,7 @@ func main() {
 	посидеть у огня и послушать какую-нибудь интересную сказку.
 		В этот вечер...`
 
-	top := freq.Top10(text, chTerminate)
+	top := pipe.Top10(text, chTerminate)
 
 	fmt.Println(top)
 }
