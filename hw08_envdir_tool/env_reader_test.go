@@ -2,6 +2,7 @@ package main
 
 import (
 	"reflect"
+	"sort"
 	"testing"
 )
 
@@ -74,7 +75,9 @@ func TestEnvToStrings(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := envToStrings(tt.args.e); !reflect.DeepEqual(got, tt.want) {
+			got := envToStrings(tt.args.e)
+			sort.Strings(got)
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("envToStrings() = %v, want %v", got, tt.want)
 			}
 		})
@@ -185,13 +188,6 @@ func TestReadDir(t *testing.T) {
 				"var1": "fooooo",
 			},
 		},
-		//{
-		//	name: `empty dir`,
-		//	args: args{
-		//		dir: `./testdata/empty-dir`,
-		//	},
-		//	want: Environment{},
-		//},
 		{
 			name: `invalid filename`,
 			args: args{
@@ -215,7 +211,7 @@ func TestReadDir(t *testing.T) {
 	}
 }
 
-func Test_mergeEnv(t *testing.T) {
+func TestMergeEnv(t *testing.T) {
 	type args struct {
 		lhs Environment
 		rhs Environment

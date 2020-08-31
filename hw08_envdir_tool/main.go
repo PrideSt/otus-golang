@@ -25,6 +25,8 @@ func main() {
 	osEnv := stringsToEnv(os.Environ())
 	if len(env) > 0 {
 		env = mergeEnv(osEnv, env)
+	} else {
+		env = osEnv
 	}
 
 	exitCode := RunCmd(os.Args[2:], env)

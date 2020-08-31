@@ -4,6 +4,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"sort"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -29,7 +31,8 @@ func resetEnv(e Environment) {
 	}
 }
 
-func TestRunCmd1(t *testing.T) {
+func TestRunCmd(t *testing.T) {
+	envUtilArgs := []string{"/usr/bin/env"}
 	type args struct {
 		args  []string
 		env   Environment
@@ -38,35 +41,35 @@ func TestRunCmd1(t *testing.T) {
 	tests := []struct {
 		name           string
 		args           args
-		want           string
+		want           []string
 		wantReturnCode int
 	}{
 		{
 			name: `run simple`,
 			args: args{
-				args: []string{"./cmd/env/env"},
+				args: envUtilArgs,
 				env:  Environment{"aaa": "1", "bbb": "2"},
 			},
-			want: "aaa=1\nbbb=2\n",
+			want: []string{"", "aaa=1", "bbb=2"},
 		},
 		{
 			name: `run env overwrite`,
 			args: args{
-				args:  []string{"./cmd/env/env"},
+				args:  envUtilArgs,
 				env:   Environment{"aaa": "1", "bbb": "2"},
 				osEnv: Environment{"aaa": "3"},
 			},
-			want: "aaa=1\nbbb=2\n",
+			want: []string{"", "aaa=1", "bbb=2"},
 		},
 		{
 			// unset obtain in main merge
 			name: `run env not unset`,
 			args: args{
-				args:  []string{"./cmd/env/env"},
+				args:  envUtilArgs,
 				env:   Environment{"aaa": ""},
 				osEnv: Environment{"aaa": "1", "bbb": "2"},
 			},
-			want: "aaa=\n",
+			want: []string{"", "aaa="},
 		},
 		{
 			name: `run cmd not found`,
@@ -74,6 +77,7 @@ func TestRunCmd1(t *testing.T) {
 				args: []string{"./cmd/env/file-not-found"},
 			},
 			wantReturnCode: 1,
+			want:           []string{""},
 		},
 	}
 
@@ -101,7 +105,9 @@ func TestRunCmd1(t *testing.T) {
 			}
 
 			output, _ := ioutil.ReadFile(buffer.Name())
-			require.Equal(t, tt.want, string(output))
+			lines := strings.Split(string(output), "\n")
+			sort.Strings(lines)
+			require.Equal(t, tt.want, lines)
 		})
 	}
 }

@@ -103,11 +103,7 @@ func ReadDir(dir string) (Environment, error) {
 			return nil, fmt.Errorf("invalid filename %q", fInfo.Name())
 		}
 
-		value := getValue(path.Join(dir, fInfo.Name()))
-
-		if len(value) > 0 {
-			env[fInfo.Name()] = value
-		}
+		env[fInfo.Name()] = getValue(path.Join(dir, fInfo.Name()))
 	}
 	return env, nil
 }
