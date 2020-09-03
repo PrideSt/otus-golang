@@ -38,13 +38,11 @@ func closeOrErr(f io.Closer) {
 // file specified by toPath. Coping starts at offset bytes from input.
 // Return error when offset large then input file or input file not seekable.
 func Copy(fromPath string, toPath string, offset int64, limit int64) error {
-	var reader io.Reader
-
 	in, err := os.Open(fromPath)
 	if err != nil {
 		return fmt.Errorf("%w: open for reading failed %s", ErrInvalidPath, err)
 	}
-	defer closeOrErr(in)
+	defer in.Close()
 
 	inFileInfo, err := in.Stat()
 	if err != nil {
@@ -67,13 +65,12 @@ func Copy(fromPath string, toPath string, offset int64, limit int64) error {
 		}
 	}
 
-	var needToCopyBytes int64
+	var reader io.Reader = in
+	needToCopyBytes := inFileSize
+
 	if limit > 0 {
 		reader = io.LimitReader(in, limit)
 		needToCopyBytes = min(limit, inFileSize-offset)
-	} else {
-		reader = in
-		needToCopyBytes = inFileSize
 	}
 
 	writer, err := os.Create(toPath)
@@ -83,12 +80,12 @@ func Copy(fromPath string, toPath string, offset int64, limit int64) error {
 	defer closeOrErr(writer)
 
 	bar := pb.Full.Start64(needToCopyBytes)
+	defer bar.Finish()
+
 	barReader := bar.NewProxyReader(reader)
-	_, err = io.Copy(writer, barReader)
-	if err != nil {
+	if _, err = io.Copy(writer, barReader); err != nil {
 		return fmt.Errorf("%w: %s", ErrCopy, err)
 	}
-	bar.Finish()
 
 	return nil
 }
