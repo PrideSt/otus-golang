@@ -1,8 +1,8 @@
 package models
 
-type UserRole string
+//go:generate go run ./../go-validate/main.go -in ./models.go
 
-// NOTE: Several struct specs in one type declaration are allowed.
+type UserRole string
 
 type (
 	User struct {
@@ -28,4 +28,16 @@ type Token struct {
 type Response struct {
 	Code int    `validate:"in:200,404,500"`
 	Body string `json:"omitempty"`
+}
+
+type WithEmbedded struct {
+	ID string `validate:"len:36"`
+	Response
+}
+
+type ClassProperty struct {
+	ID string `validate:"len:36"`
+	// OneResp is instance of Validate interface
+	OneResp          Response
+	NoValidatorClass Token
 }
