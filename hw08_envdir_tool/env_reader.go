@@ -74,9 +74,7 @@ func mergeEnv(lhs Environment, rhs Environment) Environment {
 			continue
 		}
 
-		if _, ok := lhs[key]; ok {
-			delete(lhs, key)
-		}
+		delete(lhs, key)
 	}
 
 	return lhs
