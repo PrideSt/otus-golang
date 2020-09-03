@@ -53,17 +53,13 @@ func envToStrings(e Environment) []string {
 // stringsToEnv converts key=value strings to Environment.
 func stringsToEnv(ss []string) Environment {
 	env := make(Environment, len(ss))
-	var name, value string
 	for _, line := range ss {
-		position := strings.IndexByte(line, '=')
-		if position == -1 {
-			env[line] = ""
-			continue
+		kvPair := strings.SplitN(line, "=", 2)
+		if len(kvPair) < 2 {
+			env[kvPair[0]] = ""
+		} else {
+			env[kvPair[0]] = kvPair[1]
 		}
-
-		name = line[:position]
-		value = line[position+1:]
-		env[name] = value
 	}
 
 	return env
@@ -74,10 +70,11 @@ func mergeEnv(lhs Environment, rhs Environment) Environment {
 	for key, val := range rhs {
 		if len(val) > 0 {
 			lhs[key] = val
-		} else {
-			if _, ok := lhs[key]; !ok {
-				continue
-			}
+
+			continue
+		}
+
+		if _, ok := lhs[key]; ok {
 			delete(lhs, key)
 		}
 	}
