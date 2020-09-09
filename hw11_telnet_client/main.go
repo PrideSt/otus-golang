@@ -66,8 +66,8 @@ func main() {
 	<-chSigTerm
 	<-chReceiverTerm
 	// don't waiting for stdin closing
-	//https://stackoverflow.com/questions/63789503/is-it-possible-to-interrupt-io-copy-by-closing-src
-	//<-chSenderTerm
+	// https://stackoverflow.com/questions/63789503/is-it-possible-to-interrupt-io-copy-by-closing-src
+	// <-chSenderTerm
 	log.Println("bye!")
 }
 
