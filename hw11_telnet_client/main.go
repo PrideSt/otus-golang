@@ -63,17 +63,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Println("main wait")
-
 	<-chSigTerm
-	log.Println("signal closed")
-
-	<-chSenderTerm
-	log.Println("sender closed")
-
 	<-chReceiverTerm
-	log.Println("receiver closed")
-	log.Println("Done.")
+	// don't waiting for stdin closing
+	//https://stackoverflow.com/questions/63789503/is-it-possible-to-interrupt-io-copy-by-closing-src
+	//<-chSenderTerm
+	log.Println("bye!")
 }
 
 func handleSignals(ctx context.Context) <-chan struct{} {
@@ -92,6 +87,7 @@ func handleSignals(ctx context.Context) <-chan struct{} {
 			select {
 			case sign := <-sigChan:
 				log.Printf("signal %s recv, terminate...", sign)
+
 				return
 
 			case <-ctx.Done():
@@ -111,10 +107,12 @@ func runSender(client TelnetClient) <-chan struct{} {
 		defer close(chSenderTerm)
 		if err := client.Send(); err != nil {
 			log.Println("Send error:", err)
+
 			return
 		}
 		log.Println("Sender EOF!")
 	}()
+
 	return chSenderTerm
 }
 
@@ -124,9 +122,11 @@ func runReceiver(client TelnetClient) <-chan struct{} {
 		defer close(chReceiverTerm)
 		if err := client.Receive(); err != nil {
 			log.Println("Recv error:", err)
+
 			return
 		}
 		log.Println("Connection closed by peer")
 	}()
+
 	return chReceiverTerm
 }

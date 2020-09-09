@@ -24,7 +24,7 @@ func NewTelnetClient(address string, timeout time.Duration, in io.ReadCloser, ou
 	return &TCPTelnetClient{
 		address: tcpAddr,
 		timeout: timeout,
-		In:      in,
+		in:      in,
 		out:     out,
 	}
 }
@@ -32,7 +32,7 @@ func NewTelnetClient(address string, timeout time.Duration, in io.ReadCloser, ou
 type TCPTelnetClient struct {
 	address net.Addr
 	timeout time.Duration
-	In      io.ReadCloser
+	in      io.ReadCloser
 	out     io.Writer
 	con     net.Conn
 }
@@ -48,7 +48,7 @@ func (c *TCPTelnetClient) Connect() error {
 }
 
 func (c *TCPTelnetClient) Close() error {
-	if err := c.In.Close(); err != nil {
+	if err := c.in.Close(); err != nil {
 		return fmt.Errorf("close connection fault: %w", err)
 	}
 
@@ -56,12 +56,11 @@ func (c *TCPTelnetClient) Close() error {
 		return fmt.Errorf("close connection fault: %w", err)
 	}
 
-	log.Println("Close function called")
 	return nil
 }
 
 func (c *TCPTelnetClient) Send() error {
-	_, err := io.Copy(c.con, c.In)
+	_, err := io.Copy(c.con, c.in)
 	return err
 }
 
