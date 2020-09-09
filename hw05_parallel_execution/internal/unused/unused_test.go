@@ -1,4 +1,4 @@
-package hw05_parallel_execution //nolint:golint,stylecheck
+package unused
 
 import (
 	"errors"
@@ -43,7 +43,7 @@ func TestRun(t *testing.T) {
 		result := Run(tasks, workersCount, maxErrorsCount)
 
 		require.Equal(t, ErrErrorsLimitExceeded, result)
-		require.LessOrEqual(t, atomic.LoadInt32(&runTasksCount), int32(workersCount+maxErrorsCount), "extra tasks were started")
+		require.LessOrEqual(t, runTasksCount, int32(workersCount+maxErrorsCount), "extra tasks were started")
 	})
 
 	t.Run("if were panic in first M tasks, than finished not more N+M tasks", func(t *testing.T) {
@@ -65,7 +65,7 @@ func TestRun(t *testing.T) {
 		err := Run(tasks, workersCount, maxErrorsCount)
 
 		require.Equal(t, ErrErrorsLimitExceeded, err)
-		require.LessOrEqual(t, atomic.LoadInt32(&runTasksCount), int32(workersCount+maxErrorsCount), "extra tasks were started")
+		require.LessOrEqual(t, runTasksCount, int32(workersCount+maxErrorsCount), "extra tasks were started")
 	})
 
 	t.Run("negative error count", func(t *testing.T) {
@@ -88,7 +88,7 @@ func TestRun(t *testing.T) {
 		err := Run(tasks, workersCount, maxErrorsCount)
 
 		require.NoError(t, err)
-		require.Equal(t, tasksCount, int(atomic.LoadInt32(&runTasksCount)))
+		require.Equal(t, tasksCount, int(runTasksCount))
 	})
 
 	t.Run("tasks without errors", func(t *testing.T) {
@@ -117,7 +117,7 @@ func TestRun(t *testing.T) {
 		elapsedTime := time.Since(start)
 		require.NoError(t, err)
 
-		require.Equal(t, atomic.LoadInt32(&runTasksCount), int32(tasksCount), "not all tasks were completed")
+		require.Equal(t, runTasksCount, int32(tasksCount), "not all tasks were completed")
 		require.LessOrEqual(t, int64(elapsedTime), int64(sumTime/2), "tasks were run sequentially?")
 	})
 
@@ -129,14 +129,15 @@ func TestRun(t *testing.T) {
 			workersCount := -1
 			err := Run(tasks, workersCount, maxErrorsCount)
 			require.True(t, errors.Is(err, ErrInvalidGrtnCnt))
-			require.EqualError(t, err, fmt.Sprintf("invalid goroutine count given: expected >1, actual %d", workersCount))
+			require.EqualError(t, err, fmt.Sprintf("invalid goroutin count given: expected >1, actual %d", workersCount))
 		}
 
 		{
 			workersCount := 0
 			err := Run(tasks, workersCount, maxErrorsCount)
 			require.True(t, errors.Is(err, ErrInvalidGrtnCnt))
-			require.EqualError(t, err, fmt.Sprintf("invalid goroutine count given: expected >1, actual %d", workersCount))
+			require.EqualError(t, err, fmt.Sprintf("invalid goroutin count given: expected >1, actual %d", workersCount))
 		}
+
 	})
 }

@@ -9,11 +9,9 @@ import (
 
 func TestRun(t *testing.T) {
 	t.Run("next from empty", func(t *testing.T) {
-		data := []Task{}
+		store := New(nil)
 
-		stor := New(data)
-
-		require.Nil(t, stor.Next())
+		require.Nil(t, store.Next())
 	})
 
 	t.Run("not empty", func(t *testing.T) {
@@ -27,22 +25,22 @@ func TestRun(t *testing.T) {
 		}
 		data := []Task{f1, f2}
 
-		stor := New(data)
+		store := New(data)
 
 		{
-			next := stor.Next()
+			next := store.Next()
 			require.NotNil(t, next)
-			require.Nil(t, next())
+			require.NoError(t, next())
 		}
 
 		{
-			next := stor.Next()
+			next := store.Next()
 			require.NotNil(t, next)
 			require.Equal(t, testingError, next())
 		}
 
 		{
-			next := stor.Next()
+			next := store.Next()
 			require.Nil(t, next)
 		}
 	})
