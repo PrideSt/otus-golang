@@ -15,9 +15,9 @@ var (
 )
 
 const (
-	// ErrorCodeNTPPoolInvalidConfig happens when NTP pool not configurated
+	// ErrorCodeNTPPoolInvalidConfig happens when NTP pool not configured.
 	ErrorCodeNTPPoolInvalidConfig = 1 << iota
-	// ErrorCodeNTPLookup happens when NTP service unavalible
+	// ErrorCodeNTPLookup happens when NTP service unavailable.
 	ErrorCodeNTPLookup
 )
 
@@ -26,7 +26,7 @@ func main() {
 	ntpHost, err := getNTPHost(0)
 	if err != nil {
 		err := fmt.Errorf("invalid NTP pool configuration, %w", err)
-		fmt.Fprintln(os.Stderr, err)
+		_, _ = fmt.Fprintln(os.Stderr, err)
 		os.Exit(ErrorCodeNTPPoolInvalidConfig)
 	}
 
@@ -34,7 +34,7 @@ func main() {
 	ntpTime, err := ntp.Time(ntpHost)
 	if err != nil {
 		err := fmt.Errorf("unable get NTP time, %w", err)
-		fmt.Fprintln(os.Stderr, err)
+		_, _ = fmt.Fprintln(os.Stderr, err)
 		os.Exit(ErrorCodeNTPLookup)
 	}
 
