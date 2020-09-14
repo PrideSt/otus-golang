@@ -38,6 +38,16 @@ func worker(id int, chTasks <-chan Task, chErrors chan<- error, wg *sync.WaitGro
 	log.Printf("[%d] task chan closed, terminate worker", id)
 }
 
+func handleError(errCnt, errLimit int) error {
+	log.Printf("[main] err received %d/%d", errCnt, errLimit)
+	if errLimit >= 0 && errCnt >= errLimit {
+		log.Printf("[main] err limit reached, terminate")
+		return ErrErrorsLimitExceeded
+	}
+
+	return nil
+}
+
 // Run starts tasks in N goroutines and stops its work when receiving M errors from tasks.
 func Run(tasks []Task, grtnCnt int, errLimit int) error {
 	if grtnCnt < 1 {
@@ -69,10 +79,8 @@ func Run(tasks []Task, grtnCnt int, errLimit int) error {
 			select {
 			case <-chErrors:
 				errCnt++
-				log.Printf("[main] err received %d/%d", errCnt, errLimit)
-				if errLimit > 0 && errCnt >= errLimit {
-					log.Printf("[main] err limit reached, terminate")
-					return ErrErrorsLimitExceeded
+				if err := handleError(errCnt, errLimit); err != nil {
+					return err
 				}
 			default:
 			}
@@ -80,10 +88,8 @@ func Run(tasks []Task, grtnCnt int, errLimit int) error {
 			select {
 			case <-chErrors:
 				errCnt++
-				log.Printf("[main] err received %d/%d", errCnt, errLimit)
-				if errLimit > 0 && errCnt >= errLimit {
-					log.Printf("[main] err limit reached, terminate")
-					return ErrErrorsLimitExceeded
+				if err := handleError(errCnt, errLimit); err != nil {
+					return err
 				}
 			case chTasks <- tt:
 				log.Printf("[main] task %d pushed", i)
