@@ -25,9 +25,17 @@ func (t Task) Launch() (err error) {
 	return t()
 }
 
-type Counter struct {
-	cnt int
-	mu  sync.Mutex
+func worker(id int, chTasks <-chan Task, chErrors chan<- error, wg *sync.WaitGroup) {
+	log.Printf("[%d] start worker", id)
+	defer wg.Done()
+	for t := range chTasks {
+		log.Printf("[%d] task received", id)
+		if err := t.Launch(); err != nil {
+			log.Printf("[%d] error happened", id)
+			chErrors <- err
+		}
+	}
+	log.Printf("[%d] task chan closed, terminate worker", id)
 }
 
 // Run starts tasks in N goroutines and stops its work when receiving M errors from tasks.
@@ -52,24 +60,7 @@ func Run(tasks []Task, grtnCnt int, errLimit int) error {
 
 	for i := 0; i < grtnCnt; i++ {
 		wg.Add(1)
-		go func(id int) {
-			log.Printf("[%d] start worker", id)
-			defer wg.Done()
-			for {
-				select {
-				case t, ok := <-chTasks:
-					if !ok {
-						log.Printf("[%d] task chan closed, terminate worker", id)
-						return
-					}
-					log.Printf("[%d] task received", id)
-					if err := t.Launch(); err != nil {
-						log.Printf("[%d] error happend", id)
-						chErrors <- err
-					}
-				}
-			}
-		}(i)
+		go worker(i, chTasks, chErrors, wg)
 	}
 
 	for i, tt := range tasks {
