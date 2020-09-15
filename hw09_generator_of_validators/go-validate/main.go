@@ -1,13 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	ast "go/parser"
 	"go/token"
 	"io/ioutil"
 	"log"
-	"os"
 	"path"
 
 	"github.com/PrideSt/otus-golang/hw09_generator_of_validators/go-validate/internal/generator"
@@ -44,18 +44,16 @@ func main() {
 	structs := parser.ParseStructs(f)
 
 	outFile := fmt.Sprintf("%s_validation_generated.go", path.Join(path.Dir(inFile), pkgName))
-	fOut, err := os.Create(outFile)
-	if err != nil {
-		log.Fatal(fmt.Errorf("unable to open file %q for writing: %w", outFile, err))
-	}
-	defer func() {
-		err := fOut.Close()
-		if err != nil {
-			log.Fatal(fmt.Errorf("error when close file %q: %w", outFile, err))
-		}
-	}()
 
-	if err := generator.Generate(fOut, pkgName, structs); err != nil {
+	// we can write in file direct, but when Generate failed with error we already create generated file
+	// and when log error with os.Exit defer with close never called. It's fix gocritic exitAfterDefer error.
+	var buffer bytes.Buffer
+	if err := generator.Generate(&buffer, pkgName, structs); err != nil {
+		log.Fatal(err)
+	}
+
+	// I want FileMode 644 not 600 or less, disable gosec linter
+	if err := ioutil.WriteFile(outFile, buffer.Bytes(), 0644); err != nil { //nolint:gosec
 		log.Fatal(err)
 	}
 }
