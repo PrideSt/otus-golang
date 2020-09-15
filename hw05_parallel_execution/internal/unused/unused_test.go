@@ -1,4 +1,4 @@
-package hw05_parallel_execution //nolint:golint,stylecheck
+package unused
 
 import (
 	"errors"
@@ -88,7 +88,7 @@ func TestRun(t *testing.T) {
 		err := Run(tasks, workersCount, maxErrorsCount)
 
 		require.NoError(t, err)
-		require.Equal(t, int32(tasksCount), runTasksCount)
+		require.Equal(t, tasksCount, int(runTasksCount))
 	})
 
 	t.Run("tasks without errors", func(t *testing.T) {
@@ -121,23 +121,23 @@ func TestRun(t *testing.T) {
 		require.LessOrEqual(t, int64(elapsedTime), int64(sumTime/2), "tasks were run sequentially?")
 	})
 
-	t.Run("negative goroutine count", func(t *testing.T) {
-		var tasks []Task
+	t.Run("negative of zero goroutine count", func(t *testing.T) {
+		tasks := []Task{}
 		maxErrorsCount := 99
 
-		workersCount := -1
-		err := Run(tasks, workersCount, maxErrorsCount)
-		require.True(t, errors.Is(err, ErrInvalidGrtnCnt))
-		require.EqualError(t, err, fmt.Sprintf("invalid goroutine count given: expected > 0, actual %d", workersCount))
-	})
+		{
+			workersCount := -1
+			err := Run(tasks, workersCount, maxErrorsCount)
+			require.True(t, errors.Is(err, ErrInvalidGrtnCnt))
+			require.EqualError(t, err, fmt.Sprintf("invalid goroutin count given: expected >1, actual %d", workersCount))
+		}
 
-	t.Run("zero goroutine count", func(t *testing.T) {
-		var tasks []Task
-		maxErrorsCount := 99
+		{
+			workersCount := 0
+			err := Run(tasks, workersCount, maxErrorsCount)
+			require.True(t, errors.Is(err, ErrInvalidGrtnCnt))
+			require.EqualError(t, err, fmt.Sprintf("invalid goroutin count given: expected >1, actual %d", workersCount))
+		}
 
-		workersCount := 0
-		err := Run(tasks, workersCount, maxErrorsCount)
-		require.True(t, errors.Is(err, ErrInvalidGrtnCnt))
-		require.EqualError(t, err, fmt.Sprintf("invalid goroutine count given: expected > 0, actual %d", workersCount))
 	})
 }
