@@ -51,7 +51,7 @@ func handleError(errCnt, errLimit int) error {
 // Run starts tasks in N goroutines and stops its work when receiving M errors from tasks.
 func Run(tasks []Task, grtnCnt int, errLimit int) error {
 	if grtnCnt < 1 {
-		return fmt.Errorf("%w: expected >1, actual %d", ErrInvalidGrtnCnt, grtnCnt)
+		return fmt.Errorf("%w: expected > 0, actual %d", ErrInvalidGrtnCnt, grtnCnt)
 	}
 
 	var errCnt int
@@ -73,28 +73,26 @@ func Run(tasks []Task, grtnCnt int, errLimit int) error {
 		go worker(i, chTasks, chErrors, wg)
 	}
 
-	for i, tt := range tasks {
-		isPushed := false
-		for !isPushed {
-			select {
-			case <-chErrors:
-				errCnt++
-				if err := handleError(errCnt, errLimit); err != nil {
-					return err
-				}
-			default:
+	i := 0
+	for i < len(tasks) {
+		select {
+		case <-chErrors:
+			errCnt++
+			if err := handleError(errCnt, errLimit); err != nil {
+				return err
 			}
+		default:
+		}
 
-			select {
-			case <-chErrors:
-				errCnt++
-				if err := handleError(errCnt, errLimit); err != nil {
-					return err
-				}
-			case chTasks <- tt:
-				log.Printf("[main] task %d pushed", i)
-				isPushed = true
+		select {
+		case <-chErrors:
+			errCnt++
+			if err := handleError(errCnt, errLimit); err != nil {
+				return err
 			}
+		case chTasks <- tasks[i]:
+			i++
+			log.Printf("[main] task %d pushed", i)
 		}
 	}
 

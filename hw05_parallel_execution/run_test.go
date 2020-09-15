@@ -128,7 +128,7 @@ func TestRun(t *testing.T) {
 		workersCount := -1
 		err := Run(tasks, workersCount, maxErrorsCount)
 		require.True(t, errors.Is(err, ErrInvalidGrtnCnt))
-		require.EqualError(t, err, fmt.Sprintf("invalid goroutine count given: expected >1, actual %d", workersCount))
+		require.EqualError(t, err, fmt.Sprintf("invalid goroutine count given: expected > 0, actual %d", workersCount))
 	})
 
 	t.Run("zero goroutine count", func(t *testing.T) {
@@ -138,6 +138,6 @@ func TestRun(t *testing.T) {
 		workersCount := 0
 		err := Run(tasks, workersCount, maxErrorsCount)
 		require.True(t, errors.Is(err, ErrInvalidGrtnCnt))
-		require.EqualError(t, err, fmt.Sprintf("invalid goroutine count given: expected >1, actual %d", workersCount))
+		require.EqualError(t, err, fmt.Sprintf("invalid goroutine count given: expected > 0, actual %d", workersCount))
 	})
 }
