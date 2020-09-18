@@ -83,18 +83,16 @@ func handleSignals(ctx context.Context) <-chan struct{} {
 		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 		defer signal.Stop(sigChan)
 
-		for {
-			select {
-			case sign := <-sigChan:
-				log.Printf("signal %s recv, terminate...", sign)
+		select {
+		case sign := <-sigChan:
+			log.Printf("signal %s recv, terminate...", sign)
 
-				return
+			return
 
-			case <-ctx.Done():
-				log.Println("signal handler terminated by context")
+		case <-ctx.Done():
+			log.Println("signal handler terminated by context")
 
-				return
-			}
+			return
 		}
 	}()
 
