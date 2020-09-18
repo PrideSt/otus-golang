@@ -1,22 +1,15 @@
 package hw10_program_optimization //nolint:golint,stylecheck
 
 import (
-	"encoding/json"
+	"bufio"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"regexp"
 	"strings"
 )
 
 type User struct {
-	ID       int
-	Name     string
-	Username string
-	Email    string
-	Phone    string
-	Password string
-	Address  string
+	Name   string
+	Domain string
 }
 
 type DomainStat map[string]int
@@ -31,37 +24,41 @@ func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
 
 type users [100_000]User
 
-func getUsers(r io.Reader) (result users, err error) {
-	content, err := ioutil.ReadAll(r)
-	if err != nil {
-		return
+func getUsers(r io.Reader) ([]User, error) { //nolint:unparam
+	var result users
+	i := 0
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		name := getName(scanner.Text())
+		result[i] = User{
+			Name:   name,
+			Domain: name[strings.LastIndex(name, ".")+1:],
+		}
+		i++
 	}
 
-	lines := strings.Split(string(content), "\n")
-	for i, line := range lines {
-		var user User
-		if err = json.Unmarshal([]byte(line), &user); err != nil {
-			return
-		}
-		result[i] = user
-	}
-	return
+	return result[:i], nil
 }
 
-func countDomains(u users, domain string) (DomainStat, error) {
+var emailBeginPattern = `Email":"`
+
+func getName(line string) string {
+	// without regexp much faster
+	line = line[strings.Index(line, emailBeginPattern)+len(emailBeginPattern)+1:]
+	line = line[:strings.Index(line, `"`)]
+	line = line[strings.Index(line, "@")+1:]
+
+	return strings.ToLower(line)
+}
+
+func countDomains(users []User, domain string) (DomainStat, error) {
 	result := make(DomainStat)
 
-	for _, user := range u {
-		matched, err := regexp.Match("\\."+domain, []byte(user.Email))
-		if err != nil {
-			return nil, err
-		}
-
-		if matched {
-			num := result[strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])]
-			num++
-			result[strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])] = num
+	for _, user := range users {
+		if user.Domain == domain {
+			result[user.Name]++
 		}
 	}
+
 	return result, nil
 }
