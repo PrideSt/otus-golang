@@ -7,11 +7,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-)
 
-type Validated interface {
-	Validate() ([]ValidationError, error)
-}
+	"github.com/PrideSt/otus-golang/hw09_generator_of_validators/validator"
+)
 
 func TestUserValidation(t *testing.T) {
 	requireValidation(t, User{})
@@ -60,8 +58,25 @@ func TestUserValidation(t *testing.T) {
 	})
 
 	t.Run("phones slice", func(t *testing.T) {
-		// Write me :)
-		t.Fail()
+		u := goodUser
+
+		// without phones
+		requireNoValidationErrors(t, u)
+
+		// with one correct phone
+		u.Phones = append(u.Phones, "+1234567890")
+		requireNoValidationErrors(t, u)
+
+		// with two correct phones
+		u.Phones = append(u.Phones, "-1234567890")
+		requireNoValidationErrors(t, u)
+
+		// with incorrect phone, length -ne 11
+		u.Phones = append(u.Phones, "+911")
+
+		errs, err := u.Validate()
+		require.Nil(t, err)
+		requireOneFieldErr(t, errs, "Phones[k]")
 	})
 
 	t.Run("many errors", func(t *testing.T) {
@@ -129,23 +144,113 @@ func TestResponseValidation(t *testing.T) {
 	})
 }
 
+func TestWithEmbeddedValidation(t *testing.T) {
+	requireValidation(t, User{})
+
+	goodWithEmbedded := WithEmbedded{
+		"0a44d582-9749-11ea-a056-9ff7f30f0608",
+		Response{
+			Code: 200,
+			Body: "",
+		},
+	}
+
+	requireNoValidationErrors(t, goodWithEmbedded)
+
+	t.Run("ID length", func(t *testing.T) {
+		gwe := goodWithEmbedded
+		gwe.ID = "123"
+
+		errs, err := gwe.Validate()
+		require.Nil(t, err)
+		requireOneFieldErr(t, errs, "ID")
+	})
+
+	t.Run("invalid Code", func(t *testing.T) {
+		gwe := goodWithEmbedded
+		gwe.Code = 123
+
+		errs, err := gwe.Validate()
+		require.Nil(t, err)
+		requireOneFieldErr(t, errs, "Code")
+	})
+
+	t.Run("several errors", func(t *testing.T) {
+		gwe := goodWithEmbedded
+		gwe.ID = "123"
+		gwe.Code = 123
+
+		errs, err := gwe.Validate()
+		require.Nil(t, err)
+
+		fields := make([]string, 0, len(errs))
+		for _, e := range errs {
+			fields = append(fields, e.Field)
+		}
+		require.ElementsMatch(t, fields, []string{"ID", "Code"})
+	})
+}
+
+func TestClassPropertyValidation(t *testing.T) {
+	requireValidation(t, User{})
+
+	good := ClassProperty{
+		ID: "0a44d582-9749-11ea-a056-9ff7f30f0608",
+		OneResp: Response{
+			Code: 200,
+			Body: "content",
+		},
+		NoValidatorClass: Token{},
+	}
+
+	requireNoValidationErrors(t, good)
+
+	t.Run("error in sub class", func(t *testing.T) {
+		notGood := good
+		notGood.OneResp = Response{
+			Code: 700,
+		}
+
+		errs, err := notGood.Validate()
+		require.Nil(t, err)
+		requireOneFieldErr(t, errs, "Code")
+	})
+
+	t.Run("several errors", func(t *testing.T) {
+		notGood := good
+		notGood.OneResp = Response{
+			Code: 700,
+		}
+		notGood.ID = "123"
+
+		errs, err := notGood.Validate()
+		require.Nil(t, err)
+
+		fields := make([]string, 0, len(errs))
+		for _, e := range errs {
+			fields = append(fields, e.Field)
+		}
+		require.ElementsMatch(t, fields, []string{"ID", "Code"})
+	})
+}
+
 func requireValidation(t *testing.T, v interface{}, msgAndArgs ...interface{}) {
-	_, ok := v.(Validated)
+	_, ok := v.(validator.Validated)
 	require.True(t, ok, msgAndArgs)
 }
 
 func requireNoValidation(t *testing.T, v interface{}, msgAndArgs ...interface{}) {
-	_, ok := v.(Validated)
+	_, ok := v.(validator.Validated)
 	require.False(t, ok, msgAndArgs)
 }
 
-func requireNoValidationErrors(t *testing.T, v Validated) {
+func requireNoValidationErrors(t *testing.T, v validator.Validated) {
 	errs, err := v.Validate()
 	require.Nil(t, err)
 	require.Len(t, errs, 0)
 }
 
-func requireOneFieldErr(t *testing.T, errors []ValidationError, fieldName string) {
+func requireOneFieldErr(t *testing.T, errors []validator.ValidationError, fieldName string) {
 	require.Len(t, errors, 1)
 	require.Equal(t, fieldName, errors[0].Field)
 	require.NotNil(t, errors[0].Err)
